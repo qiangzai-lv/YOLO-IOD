@@ -344,7 +344,7 @@ def pseudo_unknown_label(ann_file, ann_save_file, img_path, skip_scores):
     # 获取所有图片
     image_ids = coco.getImgIds()
     print(f"数据集中共有 {len(image_ids)} 张图片")
-    for idx, image_id in tqdm(enumerate(image_ids)):
+    for idx, image_id in tqdm.tqdm(enumerate(image_ids)):
         image_info = coco.loadImgs([image_id])[0]
         # 加载图片
         image_path = os.path.join(img_path, image_info['file_name'])
@@ -594,7 +594,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     ann_folder = './data/coco/annotations'
-    if args.setting == 'LOCO COCO':
+    if args.setting == 'LOCO_COCO':
         ann_folder = './data/coco/loco_annotations'
 
     ann_file = f'{ann_folder}/{args.task}(order)/instances_train2017_part{args.stage}.json'

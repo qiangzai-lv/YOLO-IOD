@@ -10,7 +10,6 @@ from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
 
-cls_coco = ['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
 
 def calculate_iou(box1, box2):
     # 计算两个边界框的交集部分
@@ -61,7 +60,7 @@ class MmdetModel:
         self.pt_path = pt_path
         self.skip_scores = skip_scores
         # 原来映射
-        self.class_names = cls_coco
+        self.class_names = [c[0] for c in json.load(open(class_json))]
         self.model = init_detector(self.cfg_path, self.pt_path)
         self.class_texts = json.load(open(class_json, 'r'))
 
@@ -78,8 +77,7 @@ class MmdetModel:
 
 
 def main(mmdet_cfg, mmdet_pt, class_json, ann_file, ann_save_file, img_path, skip_scores, iou_thr):
-
-    model = MmdetModel(mmdet_cfg, mmdet_pt, skip_scores=skip_scores, class_json = class_json)
+    model = MmdetModel(mmdet_cfg, mmdet_pt, skip_scores=skip_scores, class_json=class_json)
     # 加载 COCO 数据集
     coco = COCO(ann_file)
 
@@ -148,10 +146,14 @@ def main(mmdet_cfg, mmdet_pt, class_json, ann_file, ann_save_file, img_path, ski
     with open(ann_save_file, 'w') as f:
         json.dump(ann_save, f)
 
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Generate pseudo labels for YOLO-IOD"
     )
+
+    parser.add_argument('--setting', default='COCO', type=str,
+                        help='Dataset setting (e.g., COCO or LOCO COCO)')
 
     parser.add_argument('--task', type=str, required=True,
                         help='Incremental task split, e.g. 40+40')
@@ -170,7 +172,6 @@ def parse_args():
 
 
 if __name__ == '__main__':
-
     args = parse_args()
 
     task = args.task
@@ -182,9 +183,15 @@ if __name__ == '__main__':
     # -------------------------
     ann_file = f'data/coco/annotations/{task}(order)/instances_train2017_part{stage}.json'
     work_dir = f'work_dirs/yolo_iod_coco_{task.replace("+", "_")}_task{prev_stage}'
-    mmdet_cfg = f'{work_dir}/yolo_iod_coco_{task.replace("+", "_")}_task{prev_stage}.py'
-    mmdet_pt = f'{work_dir}/epoch_20.pth'
     class_json = f'data/coco/annotations/{task}(order)/coco_class_texts_stage{prev_stage}.json'
+
+    if args.setting == 'LOCO_COCO':
+        ann_file = f'data/coco/loco_annotations/{task}(order)/instances_train2017_part{stage}.json'
+        work_dir = f'work_dirs/yolo_iod_loco_coco_{task.replace("+", "_")}_task{prev_stage}'
+        class_json = f'data/coco/loco_annotations/{task}(order)/loco_class_texts_stage{prev_stage}.json'
+
+    mmdet_cfg = f'{work_dir}/{work_dir}.py'
+    mmdet_pt = f'{work_dir}/epoch_20.pth'
     ann_save_file = ann_file.replace('.json', '_ps.json')
 
     # -------------------------

@@ -38,11 +38,35 @@ data/
         └── instances_val2017.json
 ```
 
-**setting split**
+**The traditional COCO setting split**
 
 ```bash
 python script/coco2017_split.py --pattern 40+40
 ```
+
+## LOCO COCO 
+
+**Data Split:** Generate the LOCO COCO incremental split from the original COCO dataset:
+
+```bash
+python script/loco_coco_split.py --pattern 40+40
+```
+
+After running the script, annotation files will be created as:
+
+```
+data/
+└── coco/
+    ├── train2017/
+    ├── val2017/
+    └── loco_annotations/
+        └── 40+40/
+            └── instances_train2017_part0.json
+```
+
+For convenience, we also provide pre-generated LOCO COCO annotations: **[Download: LOCO COCO](https://drive.google.com/drive/folders/1uz7UA66hEabZp7MVVScnja11u7t71FCr?usp=drive_link)** 
+
+Place the downloaded files under: `data/coco/loco_annotations/`
 
 ## Pre-trained Models
 
@@ -50,15 +74,14 @@ YOLO-IOD is built upon the pre-trained YOLO-World model. Please download the req
 
 ## Training & Evaluation
 
-- Generate unknown pseudo labels using the CPR module before incremental training:
+#### Traditional COCO Setting
+
+- **Base Stage Training**: 
 
 ```bash
-python script/cpr_unknown_pseudo_label.py --setting COCO --task 40+40 --stage 0
-```
-
-- **Base Stage Training**: Train the detector on the base categories
-
-```bash
+# Generate unknown pseudo labels using the CPR module
+python script/cpr_unknown_pseudo_label.py --setting COCO --task 40+40 --stage 0 --num_clusters 30
+# Train the detector on the base categories
 bash tools/dist_train_gps.sh configs/40_40/yolo_iod_coco_40_40_task0.py 4 --amp
 ```
 
@@ -72,6 +95,54 @@ bash tools/dist_train_gps.sh configs/40_40/yolo_iod_coco_40_40_stage1.py 4 --amp
 # Incremental Learning
 bash tools/dist_train_gps.sh configs/40_40/yolo_iod_coco_40_40_task1.py 4 --amp
 ```
+
+#### LOCO COCO Training
+
+- **Base Stage Training**: 
+
+```bash
+python script/cpr_unknown_pseudo_label.py --setting LOCO_COCO --task 40+40 --stage 0 --num_clusters 30
+bash tools/dist_train_gps.sh configs/loco_40_40/yolo_iod_loco_coco_40_40_task0.py 4 --amp
+```
+
+- **Incremental Training**
+
+```bash
+python script/pseudo_label_sc.py --setting LOCO_COCO --task 40+40 --stage 1
+bash tools/dist_train_gps.sh configs/loco_40_40/yolo_iod_loco_coco_40_40_stage1.py 4 --amp
+bash tools/dist_train_gps.sh configs/loco_40_40/yolo_iod_loco_coco_40_40_task1.py 4 --amp
+```
+
+## **📊 LOCO COCO Results**
+
+We report Incremental Object Detection performance on **LOCO COCO** under different incremental settings. **CoGap** denotes the AP drop compared with the original COCO partition (lower is better).
+
+### **🔹 40 + 40 Setting**
+
+| **Method**          | **Baseline**    | **AP**   | **AP50** | **AP75** | **CoGap ↓** |
+| ------------------- | --------------- | -------- | -------- | -------- | ----------- |
+| RGR                 | Faster R-CNN    | 35.0     | 55.7     | 37.2     | **0.6%**    |
+| CL-DETR             | Deformable DETR | 40.9     | 58.8     | 43.8     | 1.1%        |
+| GCD                 | Grounding DINO  | 44.7     | 61.4     | 48.7     | 1.0%        |
+| **YOLO-IOD (Ours)** | YOLO-World (X)  | **52.2** | **68.7** | **57.3** | 0.8%        |
+
+### **🔹 70 + 10 Setting**
+
+| **Method**          | **Baseline**    | **AP**   | **AP50** | **AP75** | **CoGap ↓** |
+| ------------------- | --------------- | -------- | -------- | -------- | ----------- |
+| RGR                 | Faster R-CNN    | 34.6     | 54.7     | 37.4     | 2.0%        |
+| CL-DETR             | Deformable DETR | 39.6     | 56.0     | 41.2     | 1.8%        |
+| GCD                 | Grounding DINO  | 44.8     | 61.6     | 48.7     | 1.9%        |
+| **YOLO-IOD (Ours)** | YOLO-World (X)  | **50.7** | **67.0** | **55.6** | **1.7%**    |
+
+### **🔹 40 − 20 Setting**
+
+| **Method**          | **Baseline**    | **AP**   | **AP50** | **AP75** | **CoGap ↓** |
+| ------------------- | --------------- | -------- | -------- | -------- | ----------- |
+| RGR                 | Faster R-CNN    | 32.5     | 52.3     | 35.0     | 1.8%        |
+| CL-DETR             | Deformable DETR | 33.6     | 50.1     | 36.4     | 1.7%        |
+| GCD                 | Grounding DINO  | 42.4     | 58.0     | 46.2     | 1.6%        |
+| **YOLO-IOD (Ours)** | YOLO-World (X)  | **50.9** | **66.9** | **55.7** | **1.0%**    |
 
 ## Acknowledgement
 
