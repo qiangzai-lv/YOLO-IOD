@@ -18,7 +18,7 @@ neck_num_heads = [4, 8, _base_.last_stage_out_channels // 2 // 32]
 base_lr = 2e-4
 weight_decay = 0.05
 train_batch_size_per_gpu = 16
-load_from = './pretrain/x_stage1-62b674ad.pth'
+load_from = './weights/x_stage1-62b674ad.pth'
 text_model_name = 'openai/clip-vit-base-patch32'
 persistent_workers = False
 

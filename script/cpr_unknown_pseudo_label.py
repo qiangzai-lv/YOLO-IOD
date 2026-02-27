@@ -322,7 +322,7 @@ class MmdetModel:
 
 def pseudo_unknown_label(ann_file, ann_save_file, img_path, skip_scores):
     mmdet_cfg = "configs/baseline/yolo_world_v2_x.py"
-    mmdet_pt = './pretrain/x_stage1-62b674ad.pth'
+    mmdet_pt = './weights/x_stage1-62b674ad.pth'
 
     model = MmdetModel(mmdet_cfg, mmdet_pt, skip_scores=skip_scores, class_json='./data/texts/unknown_class_texts.json')
     # 加载 COCO 数据集
@@ -462,7 +462,7 @@ def merge_coco_annotations(original_coco_path, pseudo_coco_path, output_coco_pat
 
 
 def text_embedding(texts):
-    model = './pretrain/clip-vit-base-patch32'
+    model = 'openai/clip-vit-base-patch32'
     tokenizer = AutoTokenizer.from_pretrained(model)
     model = CLIPTextModelWithProjection.from_pretrained(model)
     device = 'cuda:0'
