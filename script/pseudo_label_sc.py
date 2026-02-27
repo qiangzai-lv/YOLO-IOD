@@ -149,21 +149,54 @@ def main(mmdet_cfg, mmdet_pt, class_json, ann_file, ann_save_file, img_path, ski
         json.dump(ann_save, f)
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Train a detector')
-    parser.add_argument('--ann_file', help='train config file path')
-    parser.add_argument('--mmdet_cfg', help='the dir to save logs and models')
-    parser.add_argument('--mmdet_pt', help='the dir to save logs and models')
-    parser.add_argument('--class_json', help='the dir to save logs and models')
-    args = parser.parse_args()
-    return args
+    parser = argparse.ArgumentParser(
+        description="Generate pseudo labels for YOLO-IOD"
+    )
+
+    parser.add_argument('--task', type=str, required=True,
+                        help='Incremental task split, e.g. 40+40')
+
+    parser.add_argument('--stage', type=int, required=True,
+                        help='Incremental stage index')
+
+    parser.add_argument('--img_path', type=str,
+                        default='data/coco/train2017',
+                        help='Image directory')
+
+    parser.add_argument('--score_thr', type=float, default=0.1)
+    parser.add_argument('--iou_thr', type=float, default=0.5)
+
+    return parser.parse_args()
+
 
 if __name__ == '__main__':
 
     args = parse_args()
-    ann_file = args.ann_file
-    img_path = 'data/coco/train2017'
+
+    task = args.task
+    stage = args.stage
+    prev_stage = stage - 1
+
+    # -------------------------
+    # paths
+    # -------------------------
+    ann_file = f'data/coco/annotations/{task}(order)/instances_train2017_part{stage}.json'
+    work_dir = f'work_dirs/yolo_iod_coco_{task.replace("+", "_")}_task{prev_stage}'
+    mmdet_cfg = f'{work_dir}/yolo_iod_coco_{task.replace("+", "_")}_task{prev_stage}.py'
+    mmdet_pt = f'{work_dir}/epoch_20.pth'
+    class_json = f'data/coco/annotations/{task}(order)/coco_class_texts_stage{prev_stage}.json'
     ann_save_file = ann_file.replace('.json', '_ps.json')
-    mmdet_cfg = args.mmdet_cfg
-    mmdet_pt = args.mmdet_pt
-    class_json = args.class_json
-    main(mmdet_cfg, mmdet_pt, class_json, ann_file, ann_save_file, img_path, 0.1, 0.5)
+
+    # -------------------------
+    # run
+    # -------------------------
+    main(
+        mmdet_cfg,
+        mmdet_pt,
+        class_json,
+        ann_file,
+        ann_save_file,
+        args.img_path,
+        args.score_thr,
+        args.iou_thr
+    )

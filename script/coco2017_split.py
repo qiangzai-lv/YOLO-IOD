@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 split_point = 70
 
+
 def split_cat(json_file_path, pattern):
     with open(json_file_path, 'r') as f:
         coco_data = json.load(f)
@@ -39,6 +40,7 @@ def replace_order(origin_path, new_path, output_dir):
     output_file_part = os.path.join(output_dir, 'instances_val2017_replace_order.json')
     with open(output_file_part, 'w') as f:
         json.dump(origin_data, f)
+
 
 def split_coco_categories(json_file_path, output_dir, categories_parts, train_val):
     # 加载COCO数据集
@@ -119,8 +121,8 @@ def split_coco_categories(json_file_path, output_dir, categories_parts, train_va
         with open(output_file_part, 'w') as file:
             file.write(', '.join('\'{}\''.format(str(item)) for item in cats))
 
-
     print("Split completed. New JSON files saved.")
+
 
 def merge_cate(stage1, stage2, train_val):
     output_dir = '/home/Newdisk/luowenlong/Datasets/COCO/2017/increase/70+10(shuffle_v1)/new/'
@@ -167,6 +169,16 @@ if __name__ == '__main__':
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    split_coco_categories(input_json_path_train, output_dir, categories_parts, 'train')
-    split_coco_categories(input_json_path_val, output_dir, categories_parts, 'val')
+    # split_coco_categories(input_json_path_train, output_dir, categories_parts, 'train')
+    # split_coco_categories(input_json_path_val, output_dir, categories_parts, 'val')
 
+    incremental_class_texts = []
+    for task_id, sub_classes in enumerate(categories_parts):
+        cls_names = [na['name'] for na in sub_classes]
+        incremental_class_texts.extend(cls_names)
+        incremental_class_texts_save_path = f'{output_dir}/coco_class_texts_stage{task_id}.json'
+        current_stage_class_texts_save_path = f'{output_dir}/coco_class_texts_curs{task_id}.json'
+        icr_class_name = [[c] for c in incremental_class_texts]
+        cur_class_name = [[c] for c in cls_names]
+        json.dump(icr_class_name, open(incremental_class_texts_save_path, 'w'))
+        json.dump(cur_class_name, open(current_stage_class_texts_save_path, 'w'))

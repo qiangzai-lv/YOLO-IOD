@@ -6,8 +6,9 @@ custom_imports = dict(
     allow_failed_imports=False)
 
 # hyper-parameters
-num_classes = 40
-num_training_classes = 40
+num_classes = 80
+num_training_classes = 80
+ori_num_classes = 40
 max_epochs = 20  # Maximum training epochs
 close_mosaic_epochs = 10
 save_epoch_intervals = 1
@@ -16,20 +17,51 @@ neck_embed_channels = [128, 256, _base_.last_stage_out_channels // 2]
 neck_num_heads = [4, 8, _base_.last_stage_out_channels // 2 // 32]
 base_lr = 2e-4
 weight_decay = 0.05
-train_batch_size_per_gpu = 16
-load_from = './pretrain/x_stage1-62b674ad.pth'
+train_batch_size_per_gpu = 12
+load_from = './weights/40_40_t1.pth'
 text_model_name = 'openai/clip-vit-base-patch32'
 persistent_workers = False
 
 classes = (
+    'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
+    'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant',
+    'bear', 'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard',
+    'sports ball', 'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket', 'bottle',
     'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli',
     'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed', 'dining table', 'toilet',
     'tv', 'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator',
-    'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush')
+    'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
+)
 
 # model settings
 model = dict(
-    type='YOLOWorldDetector',
+    type='YOLOIODDetector',
+    load_from_weight=load_from,
+    ori_setting=dict(
+        config='work_dirs/yolo_iod_coco_40_40_task0/yolo_iod_coco_40_40_task0.py',
+        ckpt='work_dirs/yolo_iod_coco_40_40_task0/epoch_20.pth',
+    ),
+    cur_setting=dict(
+        config='work_dirs/yolo_iod_coco_40_40_stage1/yolo_iod_coco_40_40_stage1.py',
+        ckpt='work_dirs/yolo_iod_coco_40_40_stage1/epoch_20.pth',
+    ),
+    kd_cfg=dict(
+        loss_cls_kd=dict(type='KDQualityFocalLoss', beta=1, loss_weight=1.0),
+        loss_reg_kd=dict(
+            type='IoULoss',
+            iou_mode='ciou',
+            bbox_format='xyxy',
+            reduction='sum',
+            loss_weight=7.5,
+            return_iou=False),
+        loss_cls_kd_temperature_old=1000,
+        loss_reg_kd_temperature_old=2,
+        loss_cls_kd_temperature_new=800,
+        loss_reg_kd_temperature_new=1,
+        kd_new=True,
+        class_names=classes,
+        ori_num_classes=ori_num_classes
+    ),
     mm_neck=True,
     num_train_classes=num_training_classes,
     num_test_classes=num_classes,
@@ -47,12 +79,12 @@ model = dict(
               embed_channels=neck_embed_channels,
               num_heads=neck_num_heads,
               block_cfg=dict(type='MaxSigmoidCSPLayerWithTwoConv')),
-    bbox_head=dict(type='YOLOWorldHead',
-                   head_module=dict(type='YOLOWorldHeadModule',
+    bbox_head=dict(type='YOLOWorldCrossKdScoreHead',
+                   head_module=dict(type='YOLOWorldCrossKdScoreHeadModule',
                                     use_bn_head=True,
                                     embed_dims=text_channels,
                                     num_classes=num_training_classes)),
-    train_cfg=dict(assigner=dict(num_classes=num_training_classes)))
+    train_cfg=dict(assigner=dict(num_classes=num_training_classes, type='BatchTaskAlignedScoreV2Assigner')))
 
 # dataset settings
 text_transform = [
@@ -61,9 +93,9 @@ text_transform = [
          max_num_samples=num_training_classes,
          padding_to_max=True,
          padding_value=''),
-    dict(type='mmdet.PackDetInputs',
+    dict(type='mmyolo.PackDetInputsScore',
          meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape', 'flip',
-                    'flip_direction', 'texts'))
+                    'flip_direction', 'texts', 'gt_bboxes_scores'))
 ]
 mosaic_affine_transform = [
     dict(
@@ -104,19 +136,19 @@ coco_train_dataset = dict(
     _delete_=True,
     type='MultiModalDataset',
     dataset=dict(
-        type='YOLOv5CocoDataset',
+        type='YOLOv5CocoScoreDataset',
         data_root='data/coco',
         metainfo=dict(classes=classes),
-        ann_file='annotations/40+40(order)/instances_train2017_part1.json',
+        ann_file='annotations/40+40(order)/instances_train2017_part1_ps.json',
         data_prefix=dict(img='train2017/'),
         filter_cfg=dict(filter_empty_gt=False, min_size=32)),
-    class_text_path='data/texts/coco_class_texts_40_40_t1.json',
+    class_text_path='data/coco/annotations/40+40(order)/coco_class_texts_stage1.json',
     pipeline=train_pipeline)
 
 train_dataloader = dict(
     persistent_workers=persistent_workers,
     batch_size=train_batch_size_per_gpu,
-    collate_fn=dict(type='yolow_collate'),
+    collate_fn=dict(type='yolow_collate_score'),
     dataset=coco_train_dataset)
 
 test_pipeline = [
@@ -137,8 +169,8 @@ coco_val_dataset = dict(
         ann_file='annotations/40+40(order)/instances_val2017_part1.json',
         data_prefix=dict(img='val2017/'),
         metainfo=dict(classes=classes),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32)),
-    class_text_path='data/texts/coco_class_texts_40_40_t1.json',
+        filter_cfg=dict(filter_empty_gt=False, min_size=32)),
+    class_text_path='data/coco/annotations/40+40(order)/coco_class_texts_stage1.json',
     pipeline=test_pipeline)
 val_dataloader = dict(dataset=coco_val_dataset)
 test_dataloader = val_dataloader
@@ -169,7 +201,7 @@ train_cfg = dict(
     type='EpochBasedTrainGPSLoop',
     gps_ratio=0.8,
     up_ratio=0.8,
-    importance_save_path='data/coco/annotations/40+40(order)/t1_importance_cross_kd.pt',
+    importance_save_path='data/coco/annotations/40+40(order)/t1_importance_iod.pt',
     max_epochs=max_epochs,
     val_interval=1,
     dynamic_intervals=[((max_epochs - close_mosaic_epochs),
@@ -199,4 +231,4 @@ val_evaluator = dict(
     ann_file='data/coco/annotations/40+40(order)/instances_val2017_part1.json',
     metric='bbox')
 test_evaluator = val_evaluator
-find_unused_parameters=True
+find_unused_parameters = True

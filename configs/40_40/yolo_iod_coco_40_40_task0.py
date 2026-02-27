@@ -6,8 +6,8 @@ custom_imports = dict(
     allow_failed_imports=False)
 
 # hyper-parameters
-num_classes = 100
-num_training_classes = 100
+num_classes = 70
+num_training_classes = 70
 num_known_cls = 40
 max_epochs = 20  # Maximum training epochs
 close_mosaic_epochs = 10
@@ -22,7 +22,7 @@ load_from = './pretrain/x_stage1-62b674ad.pth'
 text_model_name = 'openai/clip-vit-base-patch32'
 persistent_workers = False
 
-classes = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "unknown_0", "unknown_1", "unknown_2", "unknown_3", "unknown_4", "unknown_5", "unknown_6", "unknown_7", "unknown_8", "unknown_9", "unknown_10", "unknown_11", "unknown_12", "unknown_13", "unknown_14", "unknown_15", "unknown_16", "unknown_17", "unknown_18", "unknown_19", "unknown_20", "unknown_21", "unknown_22", "unknown_23", "unknown_24", "unknown_25", "unknown_26", "unknown_27", "unknown_28", "unknown_29", "unknown_30", "unknown_31", "unknown_32", "unknown_33", "unknown_34", "unknown_35", "unknown_36", "unknown_37", "unknown_38", "unknown_39", "unknown_40", "unknown_41", "unknown_42", "unknown_43", "unknown_44", "unknown_45", "unknown_46", "unknown_47", "unknown_48", "unknown_49", "unknown_50", "unknown_51", "unknown_52", "unknown_53", "unknown_54", "unknown_55", "unknown_56", "unknown_57", "unknown_58", "unknown_59"]
+classes = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "unknown_0", "unknown_1", "unknown_2", "unknown_3", "unknown_4", "unknown_5", "unknown_6", "unknown_7", "unknown_8", "unknown_9", "unknown_10", "unknown_11", "unknown_12", "unknown_13", "unknown_14", "unknown_15", "unknown_16", "unknown_17", "unknown_18", "unknown_19", "unknown_20", "unknown_21", "unknown_22", "unknown_23", "unknown_24", "unknown_25", "unknown_26", "unknown_27", "unknown_28", "unknown_29"]
 classes_val = ["person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle"]
 
 # model settings
@@ -38,7 +38,7 @@ model = dict(
         image_model={{_base_.model.backbone}},
         text_model=dict(
             type='HuggingCacheCLIPCLSPSLanguageBackbone',
-            cls_unknown_weight_path='data/coco/annotations/40+40(order)/instances_train2017_part0_un_cls_cluster_centers.pt',
+            cls_unknown_weight_path='data/coco/annotations/40+40(order)/instances_train2017_part0_cls_out_cluster_centers.pt',
             model_name=text_model_name,
             frozen_modules=['all'])),
     neck=dict(type='YOLOWorldPAFPN',
@@ -108,10 +108,10 @@ coco_train_dataset = dict(
         type='YOLOv5CocoDataset',
         data_root='data/coco',
         metainfo=dict(classes=classes),
-        ann_file='annotations/40+40(order)/instances_train2017_part0_un_cls.json',
+        ann_file='annotations/40+40(order)/instances_train2017_part0_cls_out.json',
         data_prefix=dict(img='train2017/'),
         filter_cfg=dict(filter_empty_gt=False, min_size=32)),
-    class_text_path='data/coco/annotations/40+40(order)/instances_train2017_part0_un_cls_cls_txt.json',
+    class_text_path='data/coco/annotations/40+40(order)/instances_train2017_part0_cls_out_cls_txt.json',
     pipeline=train_pipeline)
 
 train_dataloader = dict(
@@ -139,7 +139,7 @@ coco_val_dataset = dict(
         data_prefix=dict(img='val2017/'),
         metainfo=dict(classes=classes_val),
         filter_cfg=dict(filter_empty_gt=False, min_size=32)),
-    class_text_path='data/texts/coco_class_texts_40.json',
+    class_text_path='data/coco/annotations/40+40(order)/coco_class_texts_stage0.json',
     pipeline=test_pipeline)
 val_dataloader = dict(dataset=coco_val_dataset)
 test_dataloader = val_dataloader
@@ -171,7 +171,7 @@ train_cfg = dict(
     type='EpochBasedTrainGPSLoop',
     gps_ratio=0.8,
     up_ratio=0.8,
-    importance_save_path='data/coco/annotations/40+40(order)/t0_importance_cross_kd.pt',
+    importance_save_path='data/coco/annotations/40+40(order)/t0_importance_iks.pt',
     max_epochs=max_epochs,
     val_interval=1,
     dynamic_intervals=[((max_epochs - close_mosaic_epochs),
