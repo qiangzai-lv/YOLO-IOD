@@ -68,7 +68,7 @@ data/
             └── instances_train2017_part0.json
 ```
 
-For convenience, we also provide pre-generated LOCO COCO annotations: **[Download: LOCO COCO](https://drive.google.com/drive/folders/1uz7UA66hEabZp7MVVScnja11u7t71FCr?usp=drive_link)** 
+For convenience, we also provide pre-generated LOCO COCO annotations: **[Download: LOCO COCO](https://drive.google.com/drive/folders/1uz7UA66hEabZp7MVVScnja11u7t71FCr?usp=sharing)** 
 
 Place the downloaded files under: `data/coco/loco_annotations/`
 
