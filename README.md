@@ -153,10 +153,13 @@ Our code is based on the project [[YOLO-World](https://github.com/AILab-CVC/YOLO
 Please cite our paper if this repo helps your research:
 
 ```
-@inproceedings{zhang2026yoloiod,
-  title     = {YOLO-IOD: Towards Real-Time Incremental Object Detection},
-  author    = {Zhang, Shizhou and Lv, Xueqiang and Xing, Yinghui and Wu, Qirui and Xu, Di and Zhao, Chen and Zhang, Yanning},
-  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
-  year      = {2026},
+@inproceedings{zhang2026yolo,
+  title={YOLO-IOD: Towards Real Time Incremental Object Detection},
+  author={Zhang, Shizhou and Lv, Xueqiang and Xing, Yinghui and Wu, Qirui and Xu, Di and Zhao, Chen and Zhang, Yanning},
+  booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume={40},
+  number={15},
+  pages={12744--12752},
+  year={2026}
 }
 ```
